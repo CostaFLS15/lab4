@@ -37,6 +37,7 @@ SPDX-License-Identifier: MIT
 
 #include "board.h"
 #include "chip.h"
+#include "digital.h"
 #include <stdio.h>
 
 /* === Macros definitions ====================================================================== */
@@ -155,6 +156,7 @@ static void TestLed(void);
 static void Delay(void);
 
 /* === Public variable definitions ============================================================= */
+digital_output_t led_verde, led_rojo, led_azul;
 
 /* === Private variable definitions ============================================================ */
 
@@ -183,8 +185,7 @@ static void ConfigureLeds(void) {
     Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, LED_2_GPIO, LED_2_BIT, true);
 
     Chip_SCU_PinMuxSet(LED_3_PORT, LED_3_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_3_FUNC);
-    Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_3_GPIO, LED_3_BIT, false);
-    Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, LED_3_GPIO, LED_3_BIT, true);
+    led_verde=digital_output_create(LED_3_GPIO, LED_3_BIT);
 }
 
 static void ConfigureKeys(void) {
@@ -204,6 +205,7 @@ static void ConfigureKeys(void) {
 static void FlashLed(void) {
     static int divisor = 0;
     static rgb_color_t state = LED_BLUE_OFF;
+    
 
     divisor++;
     if (divisor == 5) {
@@ -251,9 +253,11 @@ static void ToggleLed(void) {
 
 static void TestLed(void) {
     if (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, TEC_4_GPIO, TEC_4_BIT) == 0) {
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_3_GPIO, LED_3_BIT, true);
+        
+        digital_output_activate(led_verde);
     } else {
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_3_GPIO, LED_3_BIT, false);
+        digital_output_deactivate(led_verde);
+        
     }
 }
 
