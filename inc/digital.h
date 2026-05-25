@@ -43,7 +43,8 @@ typedef struct digital_input_s * digital_input_t;
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
-/** @brief Crea una salida digital
+/** @brief Crea y configura una salida digital
+ * reserva memoria dinamica, inicializa el GPIO como salida y lo deja inactivo bajo
  * @param puerto puerto del microcontrolador al que se conecta la salida digital
  * @param terminal terminal del puerto al que se conecta la salida digital
  * @return digital_output_t puntero a la salida digital creada
@@ -81,10 +82,32 @@ digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal, bool inv
  */
 bool digital_input_get_state(digital_input_t input);
 
+/**
+ * @brief detecta si el estado de la entrada cambio desde la ultima consulta
+ * 
+ * @param self puntero de entrada digital
+ * @return int @c ACTIVATE_EVENT si paso de inactiva a activa
+ *              @c DEACTIVATE_EVENT si paso de inactiva a inactiva
+ *              @c 0 si no hubo cambio
+ */
 int digital_input_has_changed(digital_input_t self);
 
+/**
+ * @brief detecta el flanco de activacion de la entrada
+ * 
+ * @param self puntero de entrada digital
+ * @return true si la entrada se activo
+ * @return false 
+ */
 bool digital_input_has_activated(digital_input_t self);
 
+/**
+ * @brief detecta el flanco de desactivacion de la entrada
+ * 
+ * @param self puntero de la entrada digital
+ * @return true si la entrada se desactivo
+ * @return false 
+ */
 bool digital_input_has_deactivated(digital_input_t self);
 /* === End of conditional blocks =================================================================================== */
 

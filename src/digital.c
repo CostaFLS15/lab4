@@ -76,16 +76,18 @@ digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal, bool inv
     digital_input_t self;
     self=malloc(sizeof(struct digital_input_s));
     if(self){
-        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->puerto, self->terminal, false);
+        
         self->puerto=puerto;
         self->terminal=terminal;
         self->invertida=inverted;
         self->last_state=digital_input_get_state(self);
+         Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->puerto, self->terminal, false);
     }
     return self;
 }
 bool digital_input_get_state(digital_input_t self){
-    return (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->puerto, self->terminal)==0)==self->invertida;
+    bool state= (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->puerto, self->terminal)==0);
+    return self->invertida ? !state:state;
 }
 int digital_input_has_changed(digital_input_t self){
     int resultado=0;
