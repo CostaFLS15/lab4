@@ -34,6 +34,12 @@ struct digital_output_s{
     uint32_t puerto;
     uint8_t terminal;
 };
+struct digital_input_s{
+    uint32_t puerto;
+    uint8_t terminal;
+    bool invertida;
+
+};
 /* === Private function declarations =============================================================================== */
 
 /* === Private variable definitions ================================================================================ */
@@ -60,5 +66,19 @@ void digital_output_activate(digital_output_t self){
 void digital_output_deactivate(digital_output_t self){
     Chip_GPIO_SetPinState(LPC_GPIO_PORT,self->puerto, self->terminal, false);
 }
-void digital_output_toggle(digital_output_t self);
+void digital_output_toggle(digital_output_t self){
+    Chip_GPIO_SetPinToggle(LPC_GPIO_PORT, self->puerto, self->terminal);
+}
+digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal){
+    digital_input_t self;
+    self=malloc(sizeof(struct digital_input_s));
+    if(self){
+        self->puerto=puerto;
+        self->terminal=terminal;
+    }
+    return self;
+}
+bool digital_input_get(digital_input_t self){
+    return Chip_GPIO_GetPinState(LPC_GPIO_PORT, self->puerto, self->terminal);
+}
 /* === End of documentation ======================================================================================== */

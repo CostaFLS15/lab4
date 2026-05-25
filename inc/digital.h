@@ -37,6 +37,7 @@ extern "C" {
 /* === Public data type declarations =============================================================================== */
 
 typedef struct digital_output_s * digital_output_t;
+typedef struct digital_input_s * digital_input_t;
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
@@ -44,6 +45,8 @@ digital_output_t digital_output_create(uint32_t puerto, uint8_t terminal);
 void digital_output_activate(digital_output_t salida);
 void digital_output_deactivate(digital_output_t salida);
 void digital_output_toggle(digital_output_t salida);
+digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal);
+bool digital_input_get(digital_input_t entrada);
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus
