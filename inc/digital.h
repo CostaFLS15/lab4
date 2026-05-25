@@ -26,6 +26,7 @@ SPDX-License-Identifier: MIT
 
 /* === Headers files inclusions ==================================================================================== */
 #include <stdint.h>
+#include <stdbool.h>
 /* === Header for C++ compatibility ================================================================================ */
 
 #ifdef __cplusplus
@@ -33,7 +34,8 @@ extern "C" {
 #endif
 
 /* === Public macros definitions =================================================================================== */
-
+#define ACTIVATE_EVENT 1
+#define DEACTIVATE_EVENT -1
 /* === Public data type declarations =============================================================================== */
 
 typedef struct digital_output_s * digital_output_t;
@@ -68,7 +70,22 @@ void digital_output_toggle(digital_output_t salida);
  * @param terminal terminal del puerto al que se conecta la entrada digital
  * @return digital_input_t puntero a la entrada digital creada
  */
-digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal);
+digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal, bool inverted);
+
+/**
+ * @brief lee el estado logico actual de la entrada
+ * 
+ * @param input 
+ * @return true 
+ * @return false 
+ */
+bool digital_input_get_state(digital_input_t input);
+
+int digital_input_has_changed(digital_input_t self);
+
+bool digital_input_has_activated(digital_input_t self);
+
+bool digital_input_has_deactivated(digital_input_t self);
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus

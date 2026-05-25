@@ -38,6 +38,7 @@ struct digital_input_s{
     uint32_t puerto;
     uint8_t terminal;
     bool invertida;
+    bool last_state;
 
 };
 /* === Private function declarations =============================================================================== */
@@ -71,16 +72,36 @@ void digital_output_deactivate(digital_output_t self){
 void digital_output_toggle(digital_output_t self){
     Chip_GPIO_SetPinToggle(LPC_GPIO_PORT, self->puerto, self->terminal);
 }
-digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal){
+digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal, bool inverted){
     digital_input_t self;
     self=malloc(sizeof(struct digital_input_s));
     if(self){
+        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->puerto, self->terminal, false);
         self->puerto=puerto;
         self->terminal=terminal;
+        self->invertida=inverted;
+        self->last_state=digital_input_get_state(self);
     }
     return self;
 }
-bool digital_input_get(digital_input_t self){
-    return Chip_GPIO_GetPinState(LPC_GPIO_PORT, self->puerto, self->terminal);
+bool digital_input_get_state(digital_input_t self){
+    return (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->puerto, self->terminal)==0)==self->invertida;
+}
+int digital_input_has_changed(digital_input_t self){
+    int resultado=0;
+    bool actual=digital_input_get_state(self);
+    if(actual&&!self->last_state){
+        resultado=ACTIVATE_EVENT;
+    }else if(!actual&&self->last_state){
+        resultado=DEACTIVATE_EVENT;
+    }
+    self->last_state=actual;
+    return resultado;
+}
+bool digital_input_has_activated(digital_input_t self){
+    return digital_input_has_changed(self)==ACTIVATE_EVENT;
+}
+bool digital_input_has_deactivated(digital_input_t self){
+    return digital_input_has_changed(self)==DEACTIVATE_EVENT;
 }
 /* === End of documentation ======================================================================================== */

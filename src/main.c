@@ -186,7 +186,7 @@ static void ConfigureLeds(void) {
 
 static void ConfigureKeys(void) {
     Chip_SCU_PinMuxSet(TEC_1_PORT, TEC_1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | TEC_1_FUNC);
-    Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, TEC_1_GPIO, TEC_1_BIT, false);
+    tecla_1=digital_input_create(TEC_1_GPIO, TEC_1_BIT, false);
 
     Chip_SCU_PinMuxSet(TEC_2_PORT, TEC_2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | TEC_2_FUNC);
     Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, TEC_2_GPIO, TEC_2_BIT, false);
@@ -228,7 +228,7 @@ static void FlashLed(void) {
 }
 
 static void SwitchLed(void) {
-    if (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, TEC_1_GPIO, TEC_1_BIT) == 0) {
+    if (digital_input_get_state(tecla_1)) {
         digital_output_activate(led_amarillo);
     }
     if (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, TEC_2_GPIO, TEC_2_BIT) == 0) {
@@ -249,11 +249,9 @@ static void ToggleLed(void) {
 
 static void TestLed(void) {
     if (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, TEC_4_GPIO, TEC_4_BIT) == 0) {
-        
         digital_output_activate(led_verde);
     } else {
-        digital_output_deactivate(led_verde);
-        
+        digital_output_deactivate(led_verde);   
     }
 }
 
