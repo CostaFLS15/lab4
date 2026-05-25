@@ -49,6 +49,7 @@ struct digital_input_s{
 /* === Private function definitions ================================================================================ */
 
 /* === Public function implementation ============================================================================== */
+
 digital_output_t digital_output_create(uint32_t puerto, uint8_t terminal){
     digital_output_t self;
     self=malloc(sizeof(struct digital_output_s));
@@ -60,6 +61,7 @@ digital_output_t digital_output_create(uint32_t puerto, uint8_t terminal){
     }
     return self;
 }
+
 void digital_output_activate(digital_output_t self){
     Chip_GPIO_SetPinState(LPC_GPIO_PORT,self->puerto, self->terminal, true);
 }

@@ -41,12 +41,34 @@ typedef struct digital_input_s * digital_input_t;
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
+/** @brief Crea una salida digital
+ * @param puerto puerto del microcontrolador al que se conecta la salida digital
+ * @param terminal terminal del puerto al que se conecta la salida digital
+ * @return digital_output_t puntero a la salida digital creada
+ */
 digital_output_t digital_output_create(uint32_t puerto, uint8_t terminal);
+
+/** @brief Activa una salida digital
+ * @param salida puntero a la salida digital
+ */
 void digital_output_activate(digital_output_t salida);
+
+/** @brief Desactiva una salida digital
+ * @param salida puntero a la salida digital
+ */
 void digital_output_deactivate(digital_output_t salida);
+
+/** @brief Alterna el estado de una salida digital
+ * @param salida puntero a la salida digital
+ */
 void digital_output_toggle(digital_output_t salida);
+
+/** @brief Crea una entrada digital
+ * @param puerto puerto del microcontrolador al que se conecta la entrada digital
+ * @param terminal terminal del puerto al que se conecta la entrada digital
+ * @return digital_input_t puntero a la entrada digital creada
+ */
 digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal);
-bool digital_input_get(digital_input_t entrada);
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus

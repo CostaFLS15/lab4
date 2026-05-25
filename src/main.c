@@ -156,7 +156,7 @@ static void TestLed(void);
 static void Delay(void);
 
 /* === Public variable definitions ============================================================= */
-digital_output_t led_verde, led_rojo, led_azul, led_rgb_rojo, led_rgb_verde, led_rgb_azul;
+digital_output_t led_verde, led_rojo, led_amarillo, led_rgb_rojo, led_rgb_verde, led_rgb_azul;
 digital_input_t tecla_1, tecla_2, tecla_3, tecla_4;
 
 /* === Private variable definitions ============================================================ */
@@ -175,7 +175,7 @@ static void ConfigureLeds(void) {
 
     /******************/
     Chip_SCU_PinMuxSet(LED_1_PORT, LED_1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_1_FUNC);
-    led_azul=digital_output_create(LED_1_GPIO, LED_1_BIT); 
+    led_amarillo=digital_output_create(LED_1_GPIO, LED_1_BIT); 
 
     Chip_SCU_PinMuxSet(LED_2_PORT, LED_2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_2_FUNC);
     led_rojo=digital_output_create(LED_2_GPIO, LED_2_BIT);
@@ -210,18 +210,18 @@ static void FlashLed(void) {
 
         switch (state) {
         case LED_RED_ON:
-            Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_R_GPIO, LED_R_BIT, true);
+            digital_output_activate(led_rgb_rojo);
             break;
         case LED_GREEN_ON:
-            Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_G_GPIO, LED_G_BIT, true);
+            digital_output_activate(led_rgb_verde);
             break;
         case LED_BLUE_ON:
-            Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_B_GPIO, LED_B_BIT, true);
+            digital_output_activate(led_rgb_azul);
             break;
         default:
-            Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_R_GPIO, LED_R_BIT, false);
-            Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_G_GPIO, LED_G_BIT, false);
-            Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_B_GPIO, LED_B_BIT, false);
+            digital_output_deactivate(led_rgb_rojo);
+            digital_output_deactivate(led_rgb_verde);
+            digital_output_deactivate(led_rgb_azul);
             break;
         }
     }
@@ -229,10 +229,10 @@ static void FlashLed(void) {
 
 static void SwitchLed(void) {
     if (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, TEC_1_GPIO, TEC_1_BIT) == 0) {
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_1_GPIO, LED_1_BIT, true);
+        digital_output_activate(led_amarillo);
     }
     if (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, TEC_2_GPIO, TEC_2_BIT) == 0) {
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, LED_1_GPIO, LED_1_BIT, false);
+        digital_output_deactivate(led_amarillo);
     }
 }
 
