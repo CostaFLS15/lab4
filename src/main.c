@@ -35,6 +35,7 @@ SPDX-License-Identifier: MIT
 #error "This program can only be compiled for the EDU-CIAA-NXP board"
 #endif
 
+#include "board.h"
 #include "placa.h"
 #include "digital.h"
 #include <stdio.h>
