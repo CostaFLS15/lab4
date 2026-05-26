@@ -94,7 +94,15 @@ SPDX-License-Identifier: MIT
 /* === Public variable definitions ================================================================================= */
 
 /* === Private function definitions ================================================================================ */
+/**
+ * @brief Function to configure pins and gpio bits used by board leds
+ */
+static void ConfigureLeds(struct board_s *self);
 
+/**
+ * @brief Function to configure pins and gpio bits used by board keys
+ */
+static void ConfigureKeys(struct board_s * self);
 /* === Public function implementation ============================================================================== */
 
 static void ConfigureLeds(struct board_s *self) {
@@ -110,6 +118,7 @@ static void ConfigureLeds(struct board_s *self) {
     /******************/
     Chip_SCU_PinMuxSet(LED_1_PORT, LED_1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_1_FUNC);
     self->led_amarillo=digital_output_create(LED_1_GPIO, LED_1_BIT); 
+
     Chip_SCU_PinMuxSet(LED_2_PORT, LED_2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | LED_2_FUNC);
     self->led_rojo=digital_output_create(LED_2_GPIO, LED_2_BIT);
 
@@ -133,7 +142,7 @@ static void ConfigureKeys(struct board_s *self) {
 
 board_t board_create(){
     static struct board_s self;
-    BoardSetup(&self);
+    BoardSetup();
     ConfigureLeds(&self);
     ConfigureKeys(&self);  
     return &self;

@@ -36,7 +36,6 @@ SPDX-License-Identifier: MIT
 #endif
 
 #include "placa.h"
-#include "chip.h"
 #include "digital.h"
 #include <stdio.h>
 
@@ -63,34 +62,24 @@ typedef enum rgb_color_e {
 /* === Private function declarations =========================================================== */
 
 /**
- * @brief Function to configure pins and gpio bits used by board leds
- */
-static void ConfigureLeds(void);
-
-/**
- * @brief Function to configure pins and gpio bits used by board keys
- */
-static void ConfigureKeys(void);
-
-/**
  * @brief Function to flash RGB led in sequence
  */
-static void FlashLed(void);
+static void FlashLed(board_t placa);
 
 /**
  * @brief Function to switch on and off a led with two keys
  */
-static void SwitchLed(void);
+static void SwitchLed(board_t placa);
 
 /**
  * @brief Function to switch on and off a led with a single key
  */
-static void ToggleLed(void);
+static void ToggleLed(board_t placa);
 
 /**
  * @brief Function to turn on a led while a key is pressed
  */
-static void TestLed(void);
+static void TestLed(board_t placa);
 
 /**
  * @brief Function to generate a delay of approximately 100 ms
@@ -104,7 +93,7 @@ static void Delay(void);
 
 
 
-static void FlashLed(void) {
+static void FlashLed(board_t placa) {
     static int divisor = 0;
     static rgb_color_t state = LED_BLUE_OFF;
     
@@ -116,43 +105,43 @@ static void FlashLed(void) {
 
         switch (state) {
         case LED_RED_ON:
-            digital_output_activate(led_rgb_rojo);
+            digital_output_activate(placa->led_rgb_rojo);
             break;
         case LED_GREEN_ON:
-            digital_output_activate(led_rgb_verde);
+            digital_output_activate(placa->led_rgb_verde);
             break;
         case LED_BLUE_ON:
-            digital_output_activate(led_rgb_azul);
+            digital_output_activate(placa->led_rgb_azul);
             break;
         default:
-            digital_output_deactivate(led_rgb_rojo);
-            digital_output_deactivate(led_rgb_verde);
-            digital_output_deactivate(led_rgb_azul);
+            digital_output_deactivate(placa->led_rgb_rojo);
+            digital_output_deactivate(placa->led_rgb_verde);
+            digital_output_deactivate(placa->led_rgb_azul);
             break;
         }
     }
 }
 
-static void SwitchLed(void) {
-    if (digital_input_get_state(tecla_prender)) {
-        digital_output_activate(led_amarillo);
+static void SwitchLed(board_t placa) {
+    if (digital_input_get_state(placa->tecla_prender)) {
+        digital_output_activate(placa->led_amarillo);
     }
-    if (digital_input_get_state(tecla_apagar)) {
-        digital_output_deactivate(led_amarillo);
-    }
-}
-
-static void ToggleLed(void) {
-    if (digital_input_has_activated(tecla_cambiar)) {
-        digital_output_toggle(led_rojo);
+    if (digital_input_get_state(placa->tecla_apagar)) {
+        digital_output_deactivate(placa->led_amarillo);
     }
 }
 
-static void TestLed(void) {
-    if (digital_input_get_state(tecla_probar)) {
-        digital_output_activate(led_verde);
+static void ToggleLed(board_t placa) {
+    if (digital_input_has_activated(placa->tecla_cambiar)) {
+        digital_output_toggle(placa->led_rojo);
+    }
+}
+
+static void TestLed(board_t placa) {
+    if (digital_input_get_state(placa->tecla_probar)) {
+        digital_output_activate(placa->led_verde);
     } else {
-        digital_output_deactivate(led_verde);   
+        digital_output_deactivate(placa->led_verde);   
     }
 }
 
