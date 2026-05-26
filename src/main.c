@@ -98,9 +98,6 @@ static void TestLed(void);
 static void Delay(void);
 
 /* === Public variable definitions ============================================================= */
-digital_output_t led_verde, led_rojo, led_amarillo, led_rgb_rojo, led_rgb_verde, led_rgb_azul;
-digital_input_t tecla_1, tecla_2, tecla_3, tecla_4;
-
 /* === Private variable definitions ============================================================ */
 
 /* === Private function implementation ========================================================= */
@@ -137,22 +134,22 @@ static void FlashLed(void) {
 }
 
 static void SwitchLed(void) {
-    if (digital_input_get_state(tecla_1)) {
+    if (digital_input_get_state(tecla_prender)) {
         digital_output_activate(led_amarillo);
     }
-    if (digital_input_get_state(tecla_2)) {
+    if (digital_input_get_state(tecla_apagar)) {
         digital_output_deactivate(led_amarillo);
     }
 }
 
 static void ToggleLed(void) {
-    if (digital_input_has_activated(tecla_3)) {
+    if (digital_input_has_activated(tecla_cambiar)) {
         digital_output_toggle(led_rojo);
     }
 }
 
 static void TestLed(void) {
-    if (digital_input_get_state(tecla_4)) {
+    if (digital_input_get_state(tecla_probar)) {
         digital_output_activate(led_verde);
     } else {
         digital_output_deactivate(led_verde);   
@@ -172,10 +169,10 @@ static void Delay(void) {
 int main(void) {
     board_t placa = board_create();
     while (true) {
-        FlashLed();
-        SwitchLed();
-        ToggleLed();
-        TestLed();
+        FlashLed(placa);
+        SwitchLed(placa);
+        ToggleLed(placa);
+        TestLed(placa);
 
         Delay();
     }
