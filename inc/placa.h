@@ -1,5 +1,5 @@
 /*********************************************************************************************************************
-Copyright (c) Año, Nombre y Apellido del autor <correo@ejemplo.com>
+Copyright (c) 2026, Costa Francisco Lucas Sebastian  <correo@ejemplo.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -35,6 +35,10 @@ extern "C" {
 /* === Public macros definitions =================================================================================== */
 
 /* === Public data type declarations =============================================================================== */
+/**
+ * @brief estructura de la placa
+ * 
+ */
 typedef struct board_s{
     digital_output_t led_rojo;
     digital_output_t led_verde;
