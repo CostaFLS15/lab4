@@ -86,7 +86,7 @@ digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal, bool inv
     return self;
 }
 bool digital_input_get_state(digital_input_t self){
-    bool state= (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->puerto, self->terminal)==0);
+    bool state= (Chip_GPIO_ReadPortBit(LPC_GPIO_PORT, self->puerto, self->terminal)!=0);
     return self->invertida ? !state:state;
 }
 int digital_input_has_changed(digital_input_t self){

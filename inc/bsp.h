@@ -17,11 +17,11 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
-#ifndef PLACA_H_
-#define PLACA_H_
+#ifndef BSP_H_
+#define BSP_H_
 
-/** @file PLACA.h
- ** @brief PLACA para la creación de archivos de de cabeceras en lenguaje C
+/** @file BSP.h
+ ** @brief BSP para la creación de archivos de de cabeceras en lenguaje C
  **/
 
 /* === Headers files inclusions ==================================================================================== */
@@ -36,20 +36,18 @@ extern "C" {
 
 /* === Public data type declarations =============================================================================== */
 /**
- * @brief estructura de la placa
+ * @brief estructura de la BSP
  * 
  */
 typedef struct board_s{
-    digital_output_t led_rojo;
-    digital_output_t led_verde;
-    digital_output_t led_amarillo;
-    digital_output_t led_rgb_rojo;
-    digital_output_t led_rgb_verde;
-    digital_output_t led_rgb_azul;
-    digital_input_t tecla_prender;
-    digital_input_t tecla_apagar;
-    digital_input_t tecla_cambiar;
-    digital_input_t tecla_probar;
+    digital_output_t buzzer;
+    digital_input_t f1;
+    digital_input_t f2;
+    digital_input_t f3;
+    digital_input_t f4;
+    digital_input_t cancelar;
+    digital_input_t aceptar;
+    display_t display
 } const* const board_t;
 
 /* === Public variable declarations ================================================================================ */
@@ -61,10 +59,11 @@ typedef struct board_s{
  * @return board_t da como resultado una estructura de tipo board_t con los pines y bits de gpio correspondientes a cada led y tecla
  */
 board_t board_create();
+void board_refresh_display(void);
 /* === End of conditional blocks =================================================================================== */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* PLACA_H_ */
+#endif /* BSP_H_ */
