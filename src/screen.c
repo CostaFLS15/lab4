@@ -38,10 +38,10 @@ struct display_s{
     uint8_t flashing_from;
     uint8_t flashing_to;
     uint8_t display_memory[DISPLAY_MAX_DIGITS];
-    uint16_t flasshing_frecuency;
+    uint16_t flashing_frequency;
     uint16_t flashing_count;
     struct display_driver_s driver[1];
-}
+};
 /* === Private function declarations =============================================================================== */
 static display_t display_allocate(void);
 
@@ -125,11 +125,11 @@ void DisplayRefresh(display_t display) {
     display->driver->update_digits(1 << display->active_digit);
     display->driver->update_segments(segments);
 }
-void DisplayFlashDigits(display_t display, uint8_t from, uint8_t to, uint16_t frecuency){
-    screen->flashing_count = 0;
-    screen->flashing_from = from;
-    screen->flashing_to = to;
-    screen->flashing_frequency = frecuency;
+void DisplayFlashDigits(display_t display, uint8_t from, uint8_t to, uint16_t frequency) {
+    display->flashing_count     = 0;
+    display->flashing_from      = from;
+    display->flashing_to        = to;
+    display->flashing_frequency = frequency;
 }
 void DisplayToggleDots(display_t display, uint8_t from, uint8_t to) {
     for (int index = from; index <= to; index++) {
