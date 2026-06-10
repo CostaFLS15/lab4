@@ -49,24 +49,12 @@ SPDX-License-Identifier: MIT
 /* === Private variable declarations =========================================================== */
 
 /* === Private function declarations =========================================================== */
-
-/**
- * @brief Function to generate a delay of approximately 100 ms
- */
-static void Delay(void);
-
 /* === Public variable definitions ============================================================= */
 /* === Private variable definitions ============================================================ */
 
 /* === Private function implementation ========================================================= */
 
-static void Delay(void) {
-    for (int index = 0; index < 100; index++) {
-        for (int delay = 0; delay < 25000; delay++) {
-            __asm("NOP");
-        }
-    }
-}
+
 
 /* === Public function implementation ========================================================== */
 
@@ -89,7 +77,6 @@ int main(void) {
         if(digital_input_has_activated(board->cancelar)){
             DisplayToggleDots(board->display,0,3);
         }
-        Delay();
         if(digital_input_has_activated(board->f1)){
             entrada[3]=(entrada[3]+1)%10;
             DisplayWriteBCD(board->display, entrada, sizeof(entrada));
@@ -106,13 +93,12 @@ int main(void) {
             entrada[0]=(entrada[0]+1)%10;
             DisplayWriteBCD(board->display, entrada, sizeof(entrada));
         }
-        Delay();
-        board_refresh_display();
+        board_delay(board,10);
+        
     }
 
     return 0;
 }
-
 /* === End of documentation ==================================================================== */
 
 /** @} End of module definition for doxygen */

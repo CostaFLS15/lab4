@@ -34,23 +34,25 @@ SPDX-License-Identifier: MIT
 /* === Private data type declarations ============================================================================== */
 
 /* === Private function declarations =============================================================================== */
-static void digits_init(struct board_s*self);
-static void segments_init(struct board_s*self);
-static void buzzer_init(struct board_s*self);
-static void keys_init(struct board_s*self);
+static void digits_init();
+static void segments_init();
+static void buzzer_init(struct board_s * self);
+static void keys_init(struct board_s * self);
 static void update_segments(uint8_t segments);
 static void update_digits(uint8_t digits);
+
 
 /* === Private variable definitions ================================================================================ */
 static struct board_s board={0};
 /* === Public variable definitions ================================================================================= */
 
 /* === Private function implementation ================================================================================ */
+static display_t display_global=NULL;
 static const struct display_driver_s DISPLAY_DRIVER={
     .update_digits=update_digits,
     .update_segments=update_segments,
 };
-static void digits_init(struct board_s*self){
+static void digits_init(){
     Chip_SCU_PinMuxSet(DIGIT_1_PORT, DIGIT_1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | DIGIT_1_FUNC);
     Chip_GPIO_SetPinState(LPC_GPIO_PORT, DIGIT_1_GPIO, DIGIT_1_BIT, false);
     Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, DIGIT_1_GPIO, DIGIT_1_BIT, true);
@@ -67,7 +69,7 @@ static void digits_init(struct board_s*self){
     Chip_GPIO_SetPinState(LPC_GPIO_PORT, DIGIT_4_GPIO, DIGIT_4_BIT, false);
     Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, DIGIT_4_GPIO, DIGIT_4_BIT, true);
 }
-static void segments_init(struct board_s*self){
+static void segments_init(){
     Chip_SCU_PinMuxSet(SEGMENT_A_PORT, SEGMENT_A_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | SEGMENT_A_FUNC);
     Chip_GPIO_SetPinState(LPC_GPIO_PORT, SEGMENT_A_GPIO, SEGMENT_A_BIT, false);
     Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, SEGMENT_A_GPIO, SEGMENT_A_BIT, true);
@@ -102,26 +104,26 @@ static void segments_init(struct board_s*self){
 }
 static void buzzer_init(struct board_s*self){
     Chip_SCU_PinMuxSet(BUZZER_PORT, BUZZER_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | BUZZER_FUNC);
-    board.buzzer=digital_output_create(BUZZER_GPIO, BUZZER_PIN);
+    self->buzzer=digital_output_create(BUZZER_GPIO, BUZZER_PIN);
 }
 static void keys_init(struct board_s*self){
     Chip_SCU_PinMuxSet(KEY_F1_PORT, KEY_F1_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F1_FUNC);
-    board.f1 = digital_input_create(KEY_F1_GPIO, KEY_F1_BIT, true);
+    self->f1 = digital_input_create(KEY_F1_GPIO, KEY_F1_BIT, true);
     
     Chip_SCU_PinMuxSet(KEY_F2_PORT, KEY_F2_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F2_FUNC);
-    board.f2 = digital_input_create(KEY_F2_GPIO, KEY_F2_BIT, true);
+    self->f2 = digital_input_create(KEY_F2_GPIO, KEY_F2_BIT, true);
     
     Chip_SCU_PinMuxSet(KEY_F3_PORT, KEY_F3_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F3_FUNC);
-    board.f3 = digital_input_create(KEY_F3_GPIO, KEY_F3_BIT, true);
+    self->f3 = digital_input_create(KEY_F3_GPIO, KEY_F3_BIT, true);
     
     Chip_SCU_PinMuxSet(KEY_F4_PORT, KEY_F4_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_F4_FUNC);
-    board.f4 = digital_input_create(KEY_F4_GPIO, KEY_F4_BIT, true);
+    self->f4 = digital_input_create(KEY_F4_GPIO, KEY_F4_BIT, true);
     
     Chip_SCU_PinMuxSet(KEY_ACCEPT_PORT, KEY_ACCEPT_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_ACCEPT_FUNC);
-    board.aceptar = digital_input_create(KEY_ACCEPT_GPIO, KEY_ACCEPT_BIT, true);
+    self->aceptar = digital_input_create(KEY_ACCEPT_GPIO, KEY_ACCEPT_BIT, true);
     
     Chip_SCU_PinMuxSet(KEY_CANCEL_PORT, KEY_CANCEL_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_CANCEL_FUNC);
-    board.cancelar = digital_input_create(KEY_CANCEL_GPIO, KEY_CANCEL_BIT, true);
+    self->cancelar = digital_input_create(KEY_CANCEL_GPIO, KEY_CANCEL_BIT, true);
 }
 //update_segments(uint8_t segments) hace el mapeo logico a fisico recibe los bits que deberían estar prendidos y
 // los prende y los que deberian estar apagados los apaga
@@ -137,22 +139,32 @@ static void update_segments(uint8_t segments){
         
     }
 }
+
 static void update_digits(uint8_t digits){
     Chip_GPIO_SetValue(LPC_GPIO_PORT,DIGITS_GPIO,(1<<(3-digits))&DIGITS_MASK);
 }
 void board_refresh_display(){
-    DisplayRefresh(board.display);
+    if(display_global) DisplayRefresh(board.display);
 }
-board_t board_create(){
-    static struct board_s self;
+void board_delay(board_t placa, uint16_t ms) {
+    for (int i = 0; i < ms; i++) {
+        for (int j = 0; j < 25000; j++) {
+            __asm("NOP");
+        }
+        DisplayRefresh(placa->display);
+    }
+}
+board_t board_create(void) {
     BoardSetup();
-    keys_init(&self);
-    buzzer_init(&self);
-    segments_init(&self);
-    digits_init(&self);
-    board.display=DisplayCreate(4,&DISPLAY_DRIVER);
-    return &self;
+    keys_init(&board);
+    buzzer_init(&board);
+    segments_init(&board);
+    digits_init(&board);
+    board.display = DisplayCreate(4, &DISPLAY_DRIVER);
+    return &board;
 }
+
+
 
 /* === Public function implementation ============================================================================== */
 

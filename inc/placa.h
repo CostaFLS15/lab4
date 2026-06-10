@@ -62,6 +62,7 @@ typedef struct board_s{
  * @return board_t da como resultado una estructura de tipo board_t con los pines y bits de gpio correspondientes a cada led y tecla
  */
 board_t board_create();
+void board_delay(board_t placa, uint16_t ms);
 void board_refresh_display(void);
 /* === End of conditional blocks =================================================================================== */
 
