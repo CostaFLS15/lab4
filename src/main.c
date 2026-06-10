@@ -73,8 +73,8 @@ static void Delay(void) {
 int main(void) {
     uint8_t entrada[4]={};
     uint16_t frecuencia =0;
-    board_t placa = board_create();
-    display_write_BCD(board->display, entrada, sizeof(entrada));
+    board_t board = board_create();
+    DisplayWriteBCD(board->display, entrada, sizeof(entrada));
     while (true) {
         if(digital_input_has_activated(board->aceptar)){
             if(frecuencia==0){
@@ -84,28 +84,30 @@ int main(void) {
             }else{
                 frecuencia=0;
             }
-            display_flash_digits(board->display,0,3,frecuencia);
+            DisplayFlashDigits(board->display,0,3,frecuencia);
         }
-        if(digital_input_has_activated(board->cancel)){
-            displaly_toggle_dots(board->display,0,3);
+        if(digital_input_has_activated(board->cancelar)){
+            DisplayToggleDots(board->display,0,3);
         }
         Delay();
         if(digital_input_has_activated(board->f1)){
             entrada[3]=(entrada[3]+1)%10;
-            display_write_BCD(board->display, entrada, sizeof(entrada));
+            DisplayWriteBCD(board->display, entrada, sizeof(entrada));
         }
         if(digital_input_has_activated(board->f2)){
             entrada[2]=(entrada[2]+1)%10;
-            display_write_BCD(board->display, entrada, sizeof(entrada));
+            DisplayWriteBCD(board->display, entrada, sizeof(entrada));
         }
         if(digital_input_has_activated(board->f3)){
             entrada[1]=(entrada[1]+1)%10;
-            display_write_BCD(board->display, entrada, sizeof(entrada));
+            DisplayWriteBCD(board->display, entrada, sizeof(entrada));
         }
         if(digital_input_has_activated(board->f4)){
             entrada[0]=(entrada[0]+1)%10;
-            display_write_BCD(board->display, entrada, sizeof(entrada));
+            DisplayWriteBCD(board->display, entrada, sizeof(entrada));
         }
+        Delay();
+        board_refresh_display();
     }
 
     return 0;

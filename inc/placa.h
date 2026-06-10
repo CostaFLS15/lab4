@@ -17,15 +17,18 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 SPDX-License-Identifier: MIT
 *********************************************************************************************************************/
 
-#ifndef BSP_H_
-#define BSP_H_
+#ifndef PLACA_H_
+#define PLACA_H_
 
-/** @file BSP.h
- ** @brief BSP para la creación de archivos de de cabeceras en lenguaje C
+/** @file PLACA.h
+ ** @brief PLACA para la creación de archivos de de cabeceras en lenguaje C
  **/
 
 /* === Headers files inclusions ==================================================================================== */
 #include "digital.h"
+#include "screen.h"
+
+
 /* === Header for C++ compatibility ================================================================================ */
 
 #ifdef __cplusplus
@@ -36,7 +39,7 @@ extern "C" {
 
 /* === Public data type declarations =============================================================================== */
 /**
- * @brief estructura de la BSP
+ * @brief estructura de la PLACA
  * 
  */
 typedef struct board_s{
@@ -47,7 +50,7 @@ typedef struct board_s{
     digital_input_t f4;
     digital_input_t cancelar;
     digital_input_t aceptar;
-    display_t display
+    display_t display;
 } const* const board_t;
 
 /* === Public variable declarations ================================================================================ */
@@ -66,4 +69,4 @@ void board_refresh_display(void);
 }
 #endif
 
-#endif /* BSP_H_ */
+#endif /* PLACA_H_ */

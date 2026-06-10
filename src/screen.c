@@ -63,7 +63,7 @@ static const uint8_t IMAGES[10] = {
 /* === Public variable definitions ================================================================================= */
 
 /* === Private function implementation ================================================================================ */
-static display_t DisplayAllocate(void) {
+static display_t display_allocate(void) {
     static struct display_s instances[1];
     static bool used = false;
     if (used) return NULL;
@@ -81,7 +81,7 @@ display_t DisplayCreate(uint8_t digits, display_driver_t driver) {
         display->flashing_to = 0;
         display->flashing_frequency = 0;
         memcpy(display->driver, driver, sizeof(display->driver));
-        memcpy(display->display_memory, 0, sizeof(display->driver));
+        memset(display->display_memory, 0, sizeof(display->display_memory));
         display->driver->update_segments(0x00);
     }
 
