@@ -120,10 +120,10 @@ void DisplayRefresh(display_t display) {
         display->active_digit <= display->flashing_to) {
         return;
     }
- 
-    segments = display->display_memory[display->active_digit];
-    display->driver->update_digits(1 << display->active_digit);
+    uint8_t mem_index=(display->digits-1)-display->active_digit;
+    segments = display->display_memory[mem_index];
     display->driver->update_segments(segments);
+    display->driver->update_digits(1 << display->active_digit);
 }
 void DisplayFlashDigits(display_t display, uint8_t from, uint8_t to, uint16_t frequency) {
     display->flashing_count     = 0;

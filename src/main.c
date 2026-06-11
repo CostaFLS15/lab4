@@ -59,7 +59,7 @@ SPDX-License-Identifier: MIT
 /* === Public function implementation ========================================================== */
 
 int main(void) {
-    uint8_t entrada[4]={};
+    uint8_t entrada[4]={0,0,0,0};
     uint16_t frecuencia =0;
     board_t board = board_create();
     DisplayWriteBCD(board->display, entrada, sizeof(entrada));
@@ -100,5 +100,6 @@ int main(void) {
     return 0;
 }
 /* === End of documentation ==================================================================== */
+    
 
 /** @} End of module definition for doxygen */

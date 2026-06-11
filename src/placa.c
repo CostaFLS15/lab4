@@ -128,20 +128,16 @@ static void keys_init(struct board_s*self){
 //update_segments(uint8_t segments) hace el mapeo logico a fisico recibe los bits que deberían estar prendidos y
 // los prende y los que deberian estar apagados los apaga
 static void update_segments(uint8_t segments){
-    if(segments==0x00){
-        Chip_GPIO_ClearValue(LPC_GPIO_PORT,DIGITS_GPIO,DIGITS_MASK);
-        Chip_GPIO_ClearValue(LPC_GPIO_PORT,SEGMENTS_GPIO,SEGMENTS_MASK);
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, SEGMENT_P_GPIO, SEGMENT_P_BIT, false);
-        
-    }else{
-        Chip_GPIO_SetValue(LPC_GPIO_PORT,SEGMENTS_GPIO,segments & SEGMENTS_MASK);
-        Chip_GPIO_SetPinState(LPC_GPIO_PORT, SEGMENT_P_GPIO, SEGMENT_P_BIT, (segments & SEGMENT_P));
-        
-    }
+    
+    Chip_GPIO_ClearValue(LPC_GPIO_PORT,SEGMENTS_GPIO,SEGMENTS_MASK);
+    Chip_GPIO_SetPinState(LPC_GPIO_PORT, SEGMENT_P_GPIO, SEGMENT_P_BIT, false);
+    Chip_GPIO_SetValue(LPC_GPIO_PORT,SEGMENTS_GPIO,segments & SEGMENTS_MASK);
+    Chip_GPIO_SetPinState(LPC_GPIO_PORT, SEGMENT_P_GPIO, SEGMENT_P_BIT, (segments & SEGMENT_P)!=0);
 }
+static void update_digits(uint8_t digits) {
+    Chip_GPIO_ClearValue(LPC_GPIO_PORT, DIGITS_GPIO, DIGITS_MASK);
 
-static void update_digits(uint8_t digits){
-    Chip_GPIO_SetValue(LPC_GPIO_PORT,DIGITS_GPIO,(1<<(3-digits))&DIGITS_MASK);
+    Chip_GPIO_SetValue(LPC_GPIO_PORT, DIGITS_GPIO, digits & DIGITS_MASK);
 }
 void board_refresh_display(){
     if(display_global) DisplayRefresh(board.display);
