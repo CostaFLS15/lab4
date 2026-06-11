@@ -34,15 +34,47 @@ SPDX-License-Identifier: MIT
 /* === Private data type declarations ============================================================================== */
 
 /* === Private function declarations =============================================================================== */
+/**
+ * @brief inicializa los dígitos del display
+ * 
+ */
 static void digits_init();
+/**
+ * @brief inicializa los segmentos del display
+ * 
+ */
 static void segments_init();
+/**
+ * @brief inicializa el buzzer de la placa
+ * 
+ * @param self puntero a la estructura de tipo board_s que representa la placa
+ */
 static void buzzer_init(struct board_s * self);
+/**
+ * @brief inicializa las teclas de la placa
+ * 
+ * @param self puntero a la estructura de tipo board_s que representa la placa
+ */
 static void keys_init(struct board_s * self);
+/**
+ * @brief actualiza los segmentos del display
+ * 
+ * @param segments máscara de bits con los segmentos activos 
+ */
 static void update_segments(uint8_t segments);
+/**
+ * @brief actualiza los dígitos del display
+ * 
+ * @param digits índice del dígito a activar, en el rango 0 .. (digits - 1)
+ */
 static void update_digits(uint8_t digits);
 
 
 /* === Private variable definitions ================================================================================ */
+/**
+ * @brief estructura de la placa
+ * 
+ */
 static struct board_s board={0};
 /* === Public variable definitions ================================================================================= */
 
@@ -125,8 +157,7 @@ static void keys_init(struct board_s*self){
     Chip_SCU_PinMuxSet(KEY_CANCEL_PORT, KEY_CANCEL_PIN, SCU_MODE_INBUFF_EN | SCU_MODE_INACT | KEY_CANCEL_FUNC);
     self->cancelar = digital_input_create(KEY_CANCEL_GPIO, KEY_CANCEL_BIT, true);
 }
-//update_segments(uint8_t segments) hace el mapeo logico a fisico recibe los bits que deberían estar prendidos y
-// los prende y los que deberian estar apagados los apaga
+
 static void update_segments(uint8_t segments){
     
     Chip_GPIO_ClearValue(LPC_GPIO_PORT,SEGMENTS_GPIO,SEGMENTS_MASK);
