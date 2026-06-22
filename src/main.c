@@ -93,7 +93,7 @@ int main(void) {
             entrada[0]=(entrada[0]+1)%10;
             DisplayWriteBCD(board->display, entrada, sizeof(entrada));
         }
-        board_delay(board,10);
+        board_delay(board,100);
         
     }
 
