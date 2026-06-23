@@ -24,13 +24,22 @@ SPDX-License-Identifier: MIT
 /* === Headers files inclusions ==================================================================================== */
 
 #include "clock.h"
-
+#include <stddef.h>
+#include <string.h>
 /* === Macros definitions ========================================================================================== */
 
 /* === Private data type declarations ============================================================================== */
 
 /* === Private function declarations =============================================================================== */
-
+struct clock_s {
+    clock_time_t current_time;
+    clock_time_t alarm_time;
+    bool valid;
+    bool alarm_enabled;
+    bool alarm_triggered_flag;
+    uint16_t tick_count;
+    uint16_t ticks_per_second;
+};
 /* === Private variable definitions ================================================================================ */
 
 /* === Public variable definitions ================================================================================= */
@@ -38,5 +47,114 @@ SPDX-License-Identifier: MIT
 /* === Private function definitions ================================================================================ */
 
 /* === Public function implementation ============================================================================== */
+clock_t clock_create(uint16_t ticks_per_second) {
+    static struct clock_s self[1];
+    memset(self, 0, sizeof(struct clock_s));
+    self->ticks_per_second = ticks_per_second;
+    return self;
+}
+bool clock_time_is_valid(clock_t clock) {
+    if(!clock) return false;
+    return clock->valid;
+}
+bool clock_get_time(clock_t self, clock_time_t *result) {
+    if (!self || !result) return false;
+    memcpy(result, &self->current_time, sizeof(clock_time_t));
+    return self->valid;
+}
+
+
+bool clock_set_time(clock_t self, const clock_time_t *new_time){
+    if (!self || !new_time) return false;
+    self->valid = true;
+    memcpy(&self->current_time, new_time, sizeof(clock_time_t));
+    return self->valid;
+}
+
+static void bcd_increment(clock_time_t *time) {
+    if (time->bcd[5] == 2 && time->bcd[4] == 3 &&
+        time->bcd[3] == 5 && time->bcd[2] == 9 &&
+        time->bcd[1] == 5 && time->bcd[0] == 9) {
+        memset(time, 0, sizeof(clock_time_t));
+        return;
+    }
+    if (++time->bcd[0] > 9) {
+        time->bcd[0] = 0;
+        if (++time->bcd[1] > 5) {
+            time->bcd[1] = 0;
+            if (++time->bcd[2] > 9) {
+                time->bcd[2] = 0;
+                if (++time->bcd[3] > 5) {
+                    time->bcd[3] = 0;
+                    if (++time->bcd[4] > 9) {
+                        time->bcd[4] = 0;
+                        ++time->bcd[5];
+                    }
+                    if (time->bcd[5] == 2 && time->bcd[4] > 3) {
+                        memset(time, 0, sizeof(clock_time_t));
+                    }
+                }
+            }
+        }
+    }
+}
+void clock_new_tick(clock_t clock) {
+    if (!clock->valid) return;
+    clock->tick_count++;
+    if (clock->tick_count >= clock->ticks_per_second) {
+        clock->tick_count = 0;
+        bcd_increment(&clock->current_time);
+
+        if (clock->alarm_enabled &&
+            memcmp(&clock->current_time, &clock->alarm_time, sizeof(clock_time_t)) == 0) {
+            clock->alarm_triggered_flag = true;
+        }
+    }
+}
+bool clock_set_alarm_time(clock_t clock, const clock_time_t *alarm_time) {
+    if (!clock || !alarm_time) return false;
+    memcpy(&clock->alarm_time, alarm_time, sizeof(clock_time_t));
+    return true;
+}
+bool clock_get_alarm_time(clock_t clock, clock_time_t *alarm_time) {
+    if (!clock || !alarm_time) return false;
+    memcpy(alarm_time, &clock->alarm_time, sizeof(clock_time_t));
+    return true;
+}
+void clock_enable_alarm(clock_t clock) {
+    clock->alarm_enabled = true;
+    clock->alarm_triggered_flag = false;
+}
+void clock_disable_alarm(clock_t clock) {
+    clock->alarm_enabled = false;
+    clock->alarm_triggered_flag = false;
+}
+
+bool clock_is_alarm_enabled(clock_t clock) {
+    return clock->alarm_enabled;
+}
+
+bool clock_alarm_triggered(clock_t clock) {
+    return clock->alarm_triggered_flag;
+}
+
+void clock_snooze_alarm(clock_t clock, uint8_t minutes) {
+    clock->alarm_triggered_flag = false;
+    for (uint8_t i = 0; i < minutes; i++) {
+        if (++clock->alarm_time.bcd[2] > 9) {
+            clock->alarm_time.bcd[2] = 0;
+            if (++clock->alarm_time.bcd[3] > 5) {
+                clock->alarm_time.bcd[3] = 0;
+                if (++clock->alarm_time.bcd[4] > 9) {
+                    clock->alarm_time.bcd[4] = 0;
+                    if (++clock->alarm_time.bcd[5] > 2 ||
+                        (clock->alarm_time.bcd[5] == 2 && clock->alarm_time.bcd[4] > 3)) {
+                        memset(&clock->alarm_time, 0, sizeof(clock_time_t));
+                    }
+                }
+            }
+        }
+    }
+}
 
 /* === End of documentation ======================================================================================== */
