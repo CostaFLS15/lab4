@@ -5,3 +5,8 @@ MUJU ?= ./muju
 MODULES += hal
 
 include $(MUJU)/module/base/makefile
+
+.PHONY: doc
+
+doc:
+	doxygen Doxyfile

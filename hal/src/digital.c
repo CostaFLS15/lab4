@@ -80,8 +80,8 @@ digital_input_t digital_input_create(uint32_t puerto, uint8_t terminal, bool inv
         self->puerto=puerto;
         self->terminal=terminal;
         self->invertida=inverted;
+        Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->puerto, self->terminal, false);
         self->last_state=digital_input_get_state(self);
-         Chip_GPIO_SetPinDIR(LPC_GPIO_PORT, self->puerto, self->terminal, false);
     }
     return self;
 }
