@@ -30,7 +30,10 @@ SPDX-License-Identifier: MIT
 #include "poncho.h"
 
 /* === Macros definitions ========================================================================================== */
-
+enum modos{
+    INVALIDO;
+    AJUSTE_HORA
+}
 /* === Private data type declarations ============================================================================== */
 
 /* === Private function declarations =============================================================================== */

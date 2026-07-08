@@ -96,7 +96,17 @@ int main(void) {
         board_delay(board,100);
         
     }
-
+    while(1){
+        switch (modo)
+        {
+        case constant expression:
+            /* code */
+            break;
+        
+        default:
+            break;
+        }
+    }
     return 0;
 }
 /* === End of documentation ==================================================================== */
