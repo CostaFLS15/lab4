@@ -36,6 +36,7 @@ extern "C" {
 /* === Public macros definitions =================================================================================== */
 
 /* === Public data type declarations =============================================================================== */
+
 typedef union{
     struct{
         uint8_t seconds[2];
@@ -47,6 +48,17 @@ typedef union{
 
 
 typedef struct clock_s *clock_t;
+
+typedef enum modo{
+    INVALIDO,
+    AJUSTE_MINUTOS,
+    AJUSTE_HORA,
+    NORMAL,
+    AJUSTE_ALARMA_MINUTOS,
+    AJUSTE_ALARMA_HORAS,
+    ALARMA_ACTIVADA,
+    ALARMA_DESACTIVADA,
+}modo_t;
 
 
 /**

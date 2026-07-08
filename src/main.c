@@ -38,6 +38,7 @@ SPDX-License-Identifier: MIT
 #include "board.h"
 #include "placa.h"
 #include "digital.h"
+#include "clock.h"
 #include <stdio.h>
 
 /* === Macros definitions ====================================================================== */
@@ -59,8 +60,10 @@ SPDX-License-Identifier: MIT
 /* === Public function implementation ========================================================== */
 
 int main(void) {
+    modo_t modo=INVALIDO;
     uint8_t entrada[4]={0,0,0,0};
     uint16_t frecuencia =0;
+    int contador=0;
     board_t board = board_create();
     DisplayWriteBCD(board->display, entrada, sizeof(entrada));
     while (true) {
@@ -96,7 +99,65 @@ int main(void) {
         board_delay(board,100);
         
     }
-
+    while(1){
+        
+        switch (modo)
+        {
+        case INVALIDO:
+            DisplayFlashDigits(board->display,0,3,frecuencia);
+            DisplayToggleDots(board->display, 0,3);
+            if(digital_input_has_activated(board->f4)&contador<3){
+                contador=0;
+                modo=AJUSTE_HORA;
+            }else{
+                for(int i=0;i=1000;i++){
+                    contador++;
+                }
+            }
+            break;
+        case NORMAL:
+            
+            break;
+        case AJUSTE_ALARMA_MINUTOS:
+            
+            break;
+        case AJUSTE_MINUTOS:
+            DisplayFlashDigits(board->display,2,3,frecuencia);
+            if(digital_input_has_activated(board->f4)){
+                //aumento valor minutos
+            }else{
+                if(digital_input_has_activated(board->f3)){
+                    //disminuyo
+                }
+            }
+            if(digital_input_has_activated(board->aceptar)){
+                modo=AJUSTE_HORA;
+            }
+            if(digital_input_has_activated(board->cancelar)){
+                //descartar los cambios
+            }
+            break;
+        case AJUSTE_HORA:
+            DisplayFlashDigits(board->display,0,1,frecuencia);
+            if(digital_input_has_activated(board->f4)){
+                //aumento valor horas
+            }else{
+                if(digital_input_has_activated(board->f3)){
+                    //disminuyo
+                }
+            }
+            if(digital_input_has_activated(board->aceptar)){
+                //cargar los datos a la hora del reloj
+                modo=NORMAL;
+            }
+            if(digital_input_has_activated(board->cancelar)){
+                //descarta los cambios
+            }
+        break;
+        default:
+            break;
+        }
+    }
     return 0;
 }
 /* === End of documentation ==================================================================== */
