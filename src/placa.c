@@ -30,12 +30,15 @@ SPDX-License-Identifier: MIT
 #include "poncho.h"
 
 /* === Macros definitions ========================================================================================== */
-enum modos{
-    INVALIDO;
-    AJUSTE_HORA
-}
 /* === Private data type declarations ============================================================================== */
-
+typedef enum {
+    MODO_SIN_AJUSTAR,
+    MODO_NORMAL,
+    MODO_MINUTOS,
+    MODO_HORAS,
+    MODO_MINUTOS_ALARMA,
+    MODO_HORAS_ALARMA,
+} modo_t;
 /* === Private function declarations =============================================================================== */
 /**
  * @brief inicializa los dígitos del display
