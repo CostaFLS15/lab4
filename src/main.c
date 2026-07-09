@@ -35,309 +35,285 @@ SPDX-License-Identifier: MIT
 #error "This program can only be compiled for the EDU-CIAA-NXP board"
 #endif
 
- 
+
 #include "board.h"
 #include "placa.h"
 #include "digital.h"
 #include "clock.h"
 #include "screen.h"
- 
+#include <string.h>
+
 /* === Macros definitions ====================================================================== */
- 
-/** Período del bucle principal (ms). board_delay ya refresca el display internamente. */
-#define PERIODO_MS 100
- 
-/** Cantidad de vueltas del bucle principal equivalentes a un segundo. */
-#define TICKS_POR_SEGUNDO (1000 / PERIODO_MS)
- 
-/** Tiempo de pulsación larga para F1 / F2 (3 segundos). */
-#define TICKS_PULSACION_LARGA (3 * TICKS_POR_SEGUNDO)
- 
-/** Tiempo de inactividad para descartar cambios en modo edición (30 segundos). */
-#define TICKS_INACTIVIDAD (30 * TICKS_POR_SEGUNDO)
- 
-/** Medio período de parpadeo del punto en modo normal (1 Hz => toggle cada 500 ms). */
-#define TICKS_MEDIO_PARPADEO (TICKS_POR_SEGUNDO / 2)
- 
-/**
- * Frecuencia para DisplayFlashDigits, expresada en cantidad de llamadas a DisplayRefresh.
- * board_delay llama a DisplayRefresh aproximadamente una vez por milisegundo, así que
- * ~1000 produce un parpadeo cercano a 1 Hz. Ajustar empíricamente en la placa real.
- */
-#define FRECUENCIA_PARPADEO 1000
- 
-/** Minutos que se pospone la alarma al aceptar mientras suena. */
-#define MINUTOS_POSPONER 5
- 
+
+#define PERIODO_MS              100
+#define TICKS_POR_SEGUNDO       (1000 / PERIODO_MS)
+#define TICKS_MEDIO_PARPADEO    (TICKS_POR_SEGUNDO / 2)
+#define TICKS_HOLD_3S           (3000 / PERIODO_MS)
+#define TICKS_TIMEOUT_EDICION   (30000 / PERIODO_MS)
+#define MINUTOS_SNOOZE          5
+
+
+#define FRECUENCIA_PARPADEO_DIGITOS 1000
+
 #define DIGITO_HORA_DECENA  0
 #define DIGITO_HORA_UNIDAD  1
 #define DIGITO_MIN_DECENA   2
 #define DIGITO_MIN_UNIDAD   3
- 
-/* === Private data type declarations ========================================================== */
- 
 
- 
+/* === Private data type declarations ========================================================== */
+
+typedef enum {
+    MODO_SIN_AJUSTAR,
+    MODO_NORMAL,
+    MODO_MINUTOS,
+    MODO_HORAS,
+    MODO_MINUTOS_ALARMA,
+    MODO_HORAS_ALARMA,
+} modo_t;
+
 /* === Private function declarations =========================================================== */
- 
+
 static void time_to_digits(const clock_time_t * time, uint8_t digits[4]);
 static void mostrar(board_t board, uint8_t digits[4], uint8_t mascara_puntos);
- 
+static void configurar_parpadeo_digitos(board_t board, modo_t modo);
+
 /* === Public function implementation ========================================================== */
- 
+
 int main(void) {
     board_t board = board_create();
     clock_t reloj = clock_create(TICKS_POR_SEGUNDO);
- 
+
     modo_t modo = MODO_SIN_AJUSTAR;
- 
-    clock_time_t edicion_hora;
-    clock_time_t edicion_alarma;
+    modo_t modo_previo = MODO_NORMAL;
+    
+    clock_time_t buffer_edicion = {0};
+    bool editando_alarma = false;
+
+    bool habia_hora_valida_al_entrar = false;
+
     uint8_t digitos[4] = {0, 0, 0, 0};
- 
-    uint16_t contador_f1 = 0;
-    uint16_t contador_f2 = 0;
-    uint16_t contador_inactividad = 0;
     uint16_t contador_parpadeo = 0;
-    bool punto_segundo_encendido = false;
- 
+    bool parpadeo_encendido = false;
+
+    uint16_t contador_edicion = 0;
+    uint16_t contador_hold_f1 = 0;
+    uint16_t contador_hold_f2 = 0;
+
     while (true) {
         clock_new_tick(reloj);
- 
-        /* Lectura de entradas: una sola vez por vuelta para no perder flancos */
-        bool f1_presionado = digital_input_has_state(board->f1);
-        bool f2_presionado = digital_input_has_state(board->f2);
-        bool f3_activada = digital_input_has_activated(board->f3);
-        bool f4_activada = digital_input_has_activated(board->f4);
-        bool aceptar_activada = digital_input_has_activated(board->aceptar);
-        bool cancelar_activada = digital_input_has_activated(board->cancelar);
- 
-        /* -------- Alarma sonando: tiene prioridad sobre cualquier otro modo -------- */
-        if (clock_alarm_triggered(reloj)) {
-            digital_output_toggle(board->buzzer);
- 
-            if (aceptar_activada) {
-                clock_snooze_alarm(reloj, MINUTOS_POSPONER);
-                digital_output_deactivate(board->buzzer);
-            } else if (cancelar_activada) {
-                /* Silenciar hasta el otro día, sin modificar la hora programada */
-                clock_snooze_alarm(reloj, 0);
-                digital_output_deactivate(board->buzzer);
-            }
- 
-            board_delay(board, PERIODO_MS);
-            continue;
+        if (modo != modo_previo) {
+            configurar_parpadeo_digitos(board, modo);
+            modo_previo = modo;
         }
-        digital_output_deactivate(board->buzzer);
- 
+
+        bool f1_activo = digital_input_get_state(board->f1);
+        bool f2_activo = digital_input_get_state(board->f2);
+
         switch (modo) {
- 
+
+            /* ------------------------------------------------------------------------------- */
             case MODO_SIN_AJUSTAR: {
-                clock_time_t actual;
-                clock_get_time(reloj, &actual);
-                time_to_digits(&actual, digitos);
-                mostrar(board, digitos, 0);
-                DisplayFlashDigits(board->display, 0, 3, FRECUENCIA_PARPADEO);
- 
-                if (clock_time_is_valid(reloj)) {
-                    modo = MODO_NORMAL;
-                    DisplayFlashDigits(board->display, 0, 3, 0);
-                    break;
-                }
- 
-                if (f1_presionado) {
-                    contador_f1++;
-                    if (contador_f1 == TICKS_PULSACION_LARGA) {
-                        clock_get_time(reloj, &edicion_hora);
-                        edicion_hora.time.seconds[0] = 0;
-                        edicion_hora.time.seconds[1] = 0;
-                        modo = MODO_MINUTOS;
-                        contador_inactividad = 0;
-                        DisplayFlashDigits(board->display, 0, 3, 0);
-                    }
-                } else {
-                    contador_f1 = 0;
-                }
-                break;
-            }
- 
-            case MODO_NORMAL: {
-                clock_time_t actual;
-                clock_get_time(reloj, &actual);
-                time_to_digits(&actual, digitos);
- 
+                uint8_t ceros[4] = {0, 0, 0, 0};
+
                 contador_parpadeo++;
                 if (contador_parpadeo >= TICKS_MEDIO_PARPADEO) {
                     contador_parpadeo = 0;
-                    punto_segundo_encendido = !punto_segundo_encendido;
+                    parpadeo_encendido = !parpadeo_encendido;
                 }
- 
-                uint8_t mascara = 0;
-                if (punto_segundo_encendido) mascara |= (1 << DIGITO_HORA_UNIDAD);
-                if (clock_is_alarm_enabled(reloj)) mascara |= (1 << DIGITO_HORA_DECENA);
-                mostrar(board, digitos, mascara);
- 
-                if (aceptar_activada) clock_enable_alarm(reloj);
-                if (cancelar_activada) clock_disable_alarm(reloj);
- 
-                if (f1_presionado) {
-                    contador_f1++;
-                    if (contador_f1 == TICKS_PULSACION_LARGA) {
-                        clock_get_time(reloj, &edicion_hora);
-                        edicion_hora.time.seconds[0] = 0;
-                        edicion_hora.time.seconds[1] = 0;
+
+                uint8_t mascara = parpadeo_encendido ? (1 << DIGITO_HORA_UNIDAD) : 0;
+                mostrar(board, ceros, mascara);
+
+                if (f1_activo) {
+                    contador_hold_f1++;
+                    if (contador_hold_f1 == TICKS_HOLD_3S) {
+                        memset(&buffer_edicion, 0, sizeof(buffer_edicion));
+                        editando_alarma = false;
+                        habia_hora_valida_al_entrar = false;
                         modo = MODO_MINUTOS;
-                        contador_inactividad = 0;
-                        DisplayFlashDigits(board->display, DIGITO_MIN_DECENA, DIGITO_MIN_UNIDAD, FRECUENCIA_PARPADEO);
+                        contador_edicion = 0;
+                        contador_parpadeo = 0;
+                        parpadeo_encendido = false;
                     }
                 } else {
-                    contador_f1 = 0;
+                    contador_hold_f1 = 0;
                 }
- 
-                if (f2_presionado) {
-                    contador_f2++;
-                    if (contador_f2 == TICKS_PULSACION_LARGA) {
-                        clock_get_alarm_time(reloj, &edicion_alarma);
-                        edicion_alarma.time.seconds[0] = 0;
-                        edicion_alarma.time.seconds[1] = 0;
-                        modo = MODO_MINUTOS_ALARMA;
-                        contador_inactividad = 0;
-                        DisplayFlashDigits(board->display, DIGITO_MIN_DECENA, DIGITO_MIN_UNIDAD, FRECUENCIA_PARPADEO);
+                break;
+            }
+
+            /* ------------------------------------------------------------------------------- */
+            case MODO_NORMAL: {
+                if (clock_alarm_triggered(reloj)) {
+                    /* alarma sonando: ACEPTAR pospone 5', CANCELAR silencia hasta mañana */
+                    digital_output_toggle(board->buzzer);
+
+                    if (digital_input_has_activated(board->aceptar)) {
+                        clock_snooze_alarm(reloj, MINUTOS_SNOOZE);
+                        digital_output_deactivate(board->buzzer);
+                    } else if (digital_input_has_activated(board->cancelar)) {
+                        
+                        for (uint8_t i = 0; i < 6; i++) {
+                            clock_snooze_alarm(reloj, 240);
+                        }
+                        digital_output_deactivate(board->buzzer);
                     }
                 } else {
-                    contador_f2 = 0;
+                    clock_time_t actual;
+                    clock_get_time(reloj, &actual);
+                    time_to_digits(&actual, digitos);
+
+                    contador_parpadeo++;
+                    if (contador_parpadeo >= TICKS_MEDIO_PARPADEO) {
+                        contador_parpadeo = 0;
+                        parpadeo_encendido = !parpadeo_encendido;
+                    }
+
+                    uint8_t mascara = 0;
+                    if (parpadeo_encendido) mascara |= (1 << DIGITO_HORA_UNIDAD);
+                    if (clock_is_alarm_enabled(reloj)) mascara |= (1 << DIGITO_MIN_UNIDAD);
+                    mostrar(board, digitos, mascara);
+
+                    if (digital_input_has_activated(board->aceptar)) {
+                        clock_enable_alarm(reloj);
+                    }
+                    if (digital_input_has_activated(board->cancelar)) {
+                        clock_disable_alarm(reloj);
+                    }
+                }
+
+                if (!clock_alarm_triggered(reloj)) {
+                    if (f1_activo) {
+                        contador_hold_f1++;
+                        if (contador_hold_f1 == TICKS_HOLD_3S) {
+                            clock_get_time(reloj, &buffer_edicion);
+                            editando_alarma = false;
+                            habia_hora_valida_al_entrar = true;
+                            modo = MODO_MINUTOS;
+                            contador_edicion = 0;
+                            contador_parpadeo = 0;
+                            parpadeo_encendido = false;
+                        }
+                    } else {
+                        contador_hold_f1 = 0;
+                    }
+
+                    if (f2_activo) {
+                        contador_hold_f2++;
+                        if (contador_hold_f2 == TICKS_HOLD_3S) {
+                            clock_get_alarm_time(reloj, &buffer_edicion);
+                            editando_alarma = true;
+                            habia_hora_valida_al_entrar = true;
+                            modo = MODO_MINUTOS_ALARMA;
+                            contador_edicion = 0;
+                            contador_parpadeo = 0;
+                            parpadeo_encendido = false;
+                        }
+                    } else {
+                        contador_hold_f2 = 0;
+                    }
                 }
                 break;
             }
- 
-            case MODO_MINUTOS: {
-                bool actividad = f3_activada || f4_activada;
- 
-                if (f4_activada) clock_increment_minutes(&edicion_hora);
-                if (f3_activada) clock_decrement_minutes(&edicion_hora);
-                time_to_digits(&edicion_hora, digitos);
-                mostrar(board, digitos, 0);
- 
-                if (aceptar_activada) {
-                    modo = MODO_HORAS;
-                    DisplayFlashDigits(board->display, DIGITO_HORA_DECENA, DIGITO_HORA_UNIDAD,
-                                        FRECUENCIA_PARPADEO);
-                    actividad = true;
-                } else if (cancelar_activada || contador_inactividad >= TICKS_INACTIVIDAD) {
-                    modo = clock_time_is_valid(reloj) ? MODO_NORMAL : MODO_SIN_AJUSTAR;
-                    DisplayFlashDigits(board->display, 0, 3, 0);
-                    actividad = true;
-                }
- 
-                contador_inactividad = actividad ? 0 : (uint16_t)(contador_inactividad + 1);
-                break;
-            }
- 
-            case MODO_HORAS: {
-                bool actividad = f3_activada || f4_activada;
- 
-                if (f4_activada) clock_increment_hours(&edicion_hora);
-                if (f3_activada) clock_decrement_hours(&edicion_hora);
-                time_to_digits(&edicion_hora, digitos);
-                mostrar(board, digitos, 0);
- 
-                if (aceptar_activada) {
-                    clock_set_time(reloj, &edicion_hora);
-                    modo = MODO_NORMAL;
-                    DisplayFlashDigits(board->display, 0, 3, 0);
-                    actividad = true;
-                } else if (cancelar_activada || contador_inactividad >= TICKS_INACTIVIDAD) {
-                    modo = clock_time_is_valid(reloj) ? MODO_NORMAL : MODO_SIN_AJUSTAR;
-                    DisplayFlashDigits(board->display, 0, 3, 0);
-                    actividad = true;
-                }
- 
-                contador_inactividad = actividad ? 0 : (uint16_t)(contador_inactividad + 1);
-                break;
-            }
- 
+
+            /* ------------------------------------------------------------------------------- */
+            case MODO_MINUTOS:
             case MODO_MINUTOS_ALARMA: {
-                bool actividad = f3_activada || f4_activada;
- 
-                if (f4_activada) clock_increment_minutes(&edicion_alarma);
-                if (f3_activada) clock_decrement_minutes(&edicion_alarma);
-                time_to_digits(&edicion_alarma, digitos);
-                mostrar(board, digitos, 0x0F); /* todos los puntos encendidos: modo alarma */
- 
-                if (aceptar_activada) {
-                    modo = MODO_HORAS_ALARMA;
-                    DisplayFlashDigits(board->display, DIGITO_HORA_DECENA, DIGITO_HORA_UNIDAD,
-                                        FRECUENCIA_PARPADEO);
-                    actividad = true;
-                } else if (cancelar_activada || contador_inactividad >= TICKS_INACTIVIDAD) {
-                    modo = MODO_NORMAL;
-                    DisplayFlashDigits(board->display, 0, 3, 0);
-                    actividad = true;
+                bool tecla_presionada = false;
+                modo_t modo_actual = modo;
+
+                if (digital_input_has_activated(board->f4)) {
+                    clock_increment_minutes(&buffer_edicion);
+                    tecla_presionada = true;
                 }
- 
-                contador_inactividad = actividad ? 0 : (uint16_t)(contador_inactividad + 1);
+                if (digital_input_has_activated(board->f3)) {
+                    clock_decrement_minutes(&buffer_edicion);
+                    tecla_presionada = true;
+                }
+                if (digital_input_has_activated(board->aceptar)) {
+                    modo = (modo_actual == MODO_MINUTOS) ? MODO_HORAS : MODO_HORAS_ALARMA;
+                    tecla_presionada = true;
+                }
+                if (digital_input_has_activated(board->cancelar)) {
+                    modo = habia_hora_valida_al_entrar ? MODO_NORMAL : MODO_SIN_AJUSTAR;
+                    tecla_presionada = true;
+                }
+
+                if (tecla_presionada) {
+                    contador_edicion = 0;
+                } else {
+                    contador_edicion++;
+                    if (contador_edicion >= TICKS_TIMEOUT_EDICION) {
+                        modo = habia_hora_valida_al_entrar ? MODO_NORMAL : MODO_SIN_AJUSTAR;
+                    }
+                }
+
+                time_to_digits(&buffer_edicion, digitos);
+                uint8_t mascara_puntos = editando_alarma ? 0x0F : 0;
+                mostrar(board, digitos, mascara_puntos);
                 break;
             }
- 
+
+            /* ------------------------------------------------------------------------------- */
+            case MODO_HORAS:
             case MODO_HORAS_ALARMA: {
-                bool actividad = f3_activada || f4_activada;
- 
-                if (f4_activada) clock_increment_hours(&edicion_alarma);
-                if (f3_activada) clock_decrement_hours(&edicion_alarma);
-                time_to_digits(&edicion_alarma, digitos);
-                mostrar(board, digitos, 0x0F);
- 
-                if (aceptar_activada) {
-                    clock_set_alarm_time(reloj, &edicion_alarma);
-                    modo = MODO_NORMAL;
-                    DisplayFlashDigits(board->display, 0, 3, 0);
-                    actividad = true;
-                } else if (cancelar_activada || contador_inactividad >= TICKS_INACTIVIDAD) {
-                    modo = MODO_NORMAL;
-                    DisplayFlashDigits(board->display, 0, 3, 0);
-                    actividad = true;
+                bool tecla_presionada = false;
+
+                if (digital_input_has_activated(board->f4)) {
+                    clock_increment_hours(&buffer_edicion);
+                    tecla_presionada = true;
                 }
- 
-                contador_inactividad = actividad ? 0 : (uint16_t)(contador_inactividad + 1);
+                if (digital_input_has_activated(board->f3)) {
+                    clock_decrement_hours(&buffer_edicion);
+                    tecla_presionada = true;
+                }
+                if (digital_input_has_activated(board->aceptar)) {
+                    if (editando_alarma) {
+                        clock_set_alarm_time(reloj, &buffer_edicion);
+                    } else {
+                        clock_set_time(reloj, &buffer_edicion);
+                    }
+                    modo = MODO_NORMAL;
+                    tecla_presionada = true;
+                }
+                if (digital_input_has_activated(board->cancelar)) {
+                    modo = habia_hora_valida_al_entrar ? MODO_NORMAL : MODO_SIN_AJUSTAR;
+                    tecla_presionada = true;
+                }
+
+                if (tecla_presionada) {
+                    contador_edicion = 0;
+                } else {
+                    contador_edicion++;
+                    if (contador_edicion >= TICKS_TIMEOUT_EDICION) {
+                        modo = habia_hora_valida_al_entrar ? MODO_NORMAL : MODO_SIN_AJUSTAR;
+                    }
+                }
+
+                time_to_digits(&buffer_edicion, digitos);
+                uint8_t mascara_puntos = editando_alarma ? 0x0F : 0;
+                mostrar(board, digitos, mascara_puntos);
                 break;
             }
- 
+
             default:
-                modo = MODO_SIN_AJUSTAR;
                 break;
         }
- 
+
         board_delay(board, PERIODO_MS);
     }
- 
+
     return 0;
 }
- 
+
 /* === Private function implementation ========================================================= */
- 
-/**
- * @brief Convierte una hora del reloj a un arreglo de 4 dígitos para mostrar (HH:MM).
- *
- * clock_time_t guarda, para cada campo, la unidad en el índice 0 y la decena en el índice 1
- * (ver bcd_increment en clock.c). El arreglo de salida queda en orden de despliegue:
- * [decena_hora, unidad_hora, decena_minuto, unidad_minuto].
- */
+
 static void time_to_digits(const clock_time_t * time, uint8_t digits[4]) {
     digits[DIGITO_HORA_DECENA] = time->time.hours[1];
     digits[DIGITO_HORA_UNIDAD] = time->time.hours[0];
     digits[DIGITO_MIN_DECENA] = time->time.minutes[1];
     digits[DIGITO_MIN_UNIDAD] = time->time.minutes[0];
 }
- 
-/**
- * @brief Escribe los 4 dígitos en el display y prende los puntos indicados en la máscara.
- *
- * DisplayWriteBCD borra toda la memoria de video (incluidos los puntos), por eso los puntos
- * se vuelven a aplicar en cada llamada con DisplayToggleDots (equivale a "prender" porque
- * siempre se parte de 0).
- *
- * @param mascara_puntos bit i en 1 => punto del dígito i encendido.
- */
+
 static void mostrar(board_t board, uint8_t digits[4], uint8_t mascara_puntos) {
     DisplayWriteBCD(board->display, digits, 4);
     for (uint8_t i = 0; i < 4; i++) {
@@ -346,8 +322,28 @@ static void mostrar(board_t board, uint8_t digits[4], uint8_t mascara_puntos) {
         }
     }
 }
-/* === End of documentation ==================================================================== */
-    
 
+static void configurar_parpadeo_digitos(board_t board, modo_t modo) {
+    switch (modo) {
+        case MODO_SIN_AJUSTAR:
+            DisplayFlashDigits(board->display, 0, 3, FRECUENCIA_PARPADEO_DIGITOS);
+            break;
+        case MODO_NORMAL:
+            DisplayFlashDigits(board->display, 0, 3, 0);
+            break;
+        case MODO_MINUTOS:
+        case MODO_MINUTOS_ALARMA:
+            DisplayFlashDigits(board->display, DIGITO_MIN_DECENA, DIGITO_MIN_UNIDAD, FRECUENCIA_PARPADEO_DIGITOS);
+            break;
+        case MODO_HORAS:
+        case MODO_HORAS_ALARMA:
+            DisplayFlashDigits(board->display, DIGITO_HORA_DECENA, DIGITO_HORA_UNIDAD, FRECUENCIA_PARPADEO_DIGITOS);
+            break;
+        default:
+            break;
+    }
+}
+
+/* === End of documentation ==================================================================== */
 /** @} End of module definition for doxygen */
 

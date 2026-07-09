@@ -53,6 +53,7 @@ typedef struct board_s{
     display_t display;
 } const* const board_t;
 
+
 /* === Public variable declarations ================================================================================ */
 
 /* === Public function declarations ================================================================================ */
